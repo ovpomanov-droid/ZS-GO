@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+<meta charset="UTF-8">
+<title>Реестр ЗС ГО</title>
+<meta name="viewport" content="width=device-width, initial-scale=1">
+
+<style>
+body{
+font-family:-apple-system,BlinkMacSystemFont;
+margin:20px;
+background:#f2f2f7;
+}
+
+h1{
+font-size:28px;
+}
+
+button{
+background:#007AFF;
+color:white;
+border:none;
+padding:10px 15px;
+border-radius:8px;
+margin:5px;
+}
+
+table{
+width:100%;
+background:white;
+border-radius:10px;
+padding:10px;
+}
+
+input{
+padding:8px;
+margin:5px;
+width:100%;
+}
+
+.card{
+background:white;
+padding:15px;
+border-radius:10px;
+margin-top:10px;
+}
+</style>
+</head>
+
+<body>
+
+<h1>Реестр объектов ЗС ГО</h1>
+
+<div class="card">
+<input id="name" placeholder="Название объекта">
+<input id="address" placeholder="Адрес">
+<input id="status" placeholder="Статус">
+
+<button onclick="add()">Добавить объект</button>
+</div>
+
+<div class="card">
+<table id="table">
+<tr>
+<th>№</th>
+<th>Объект</th>
+<th>Адрес</th>
+<th>Статус</th>
+</tr>
+</table>
+</div>
+
+<script>
+
+let data = JSON.parse(localStorage.getItem("zsgo") || "[]");
+
+function render(){
+
+let table=document.getElementById("table");
+
+table.innerHTML=`
+<tr>
+<th>№</th>
+<th>Объект</th>
+<th>Адрес</th>
+<th>Статус</th>
+</tr>
+`;
+
+data.forEach((o,i)=>{
+
+table.innerHTML+=`
+<tr>
+<td>${i+1}</td>
+<td>${o.name}</td>
+<td>${o.address}</td>
+<td>${o.status}</td>
+</tr>
+`;
+
+});
+
+}
+
+function add(){
+
+let name=document.getElementById("name").value;
+let address=document.getElementById("address").value;
+let status=document.getElementById("status").value;
+
+data.push({name,address,status});
+
+localStorage.setItem("zsgo",JSON.stringify(data));
+
+render();
+
+}
+
+render();
+
+</script>
+
+</body>
+</html>

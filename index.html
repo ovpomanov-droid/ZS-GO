@@ -1,124 +1,439 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ru">
 <head>
-<meta charset="UTF-8">
-<title>Реестр ЗС ГО</title>
-<meta name="viewport" content="width=device-width, initial-scale=1">
-
-<style>
-body{
-font-family:-apple-system,BlinkMacSystemFont;
-margin:20px;
-background:#f2f2f7;
-}
-
-h1{
-font-size:28px;
-}
-
-button{
-background:#007AFF;
-color:white;
-border:none;
-padding:10px 15px;
-border-radius:8px;
-margin:5px;
-}
-
-table{
-width:100%;
-background:white;
-border-radius:10px;
-padding:10px;
-}
-
-input{
-padding:8px;
-margin:5px;
-width:100%;
-}
-
-.card{
-background:white;
-padding:15px;
-border-radius:10px;
-margin-top:10px;
-}
-</style>
+  <meta charset="utf-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Реестр объектов ЗС ГО</title>
+  <style>
+    :root { --bg:#f6f7fb; --card:#fff; --text:#111; --muted:#666; --line:#e6e8ef; }
+    body { margin:0; font-family:-apple-system,BlinkMacSystemFont,Segoe UI,Roboto,Arial,sans-serif; background:var(--bg); color:var(--text); }
+    header { padding:18px 16px 10px; }
+    h1 { margin:0 0 10px; font-size:28px; }
+    .wrap { padding:0 16px 24px; max-width:1100px; margin:0 auto; }
+    .card { background:var(--card); border:1px solid var(--line); border-radius:14px; padding:14px; box-shadow:0 1px 2px rgba(0,0,0,.04); }
+    .grid { display:grid; grid-template-columns:repeat(12,1fr); gap:10px; }
+    .col-12{grid-column:span 12} .col-6{grid-column:span 6} .col-4{grid-column:span 4} .col-3{grid-column:span 3} .col-2{grid-column:span 2}
+    label { font-size:12px; color:var(--muted); display:block; margin:0 0 6px; }
+    input, select, textarea, button { width:100%; padding:10px 10px; border-radius:10px; border:1px solid var(--line); font-size:14px; background:#fff; }
+    textarea { min-height:38px; resize:vertical; }
+    .row { display:flex; gap:10px; flex-wrap:wrap; }
+    .btn { cursor:pointer; border:1px solid var(--line); background:#fff; }
+    .btn.primary { background:#1f6feb; color:#fff; border-color:#1f6feb; }
+    .btn.danger { background:#d1242f; color:#fff; border-color:#d1242f; }
+    .btn.small { padding:8px 10px; width:auto; }
+    .pill { display:inline-flex; gap:6px; align-items:center; padding:6px 10px; border:1px solid var(--line); border-radius:999px; background:#fff; font-size:13px; }
+    .muted { color:var(--muted); font-size:13px; }
+    table { width:100%; border-collapse:separate; border-spacing:0; margin-top:10px; }
+    th, td { border-bottom:1px solid var(--line); padding:10px 8px; text-align:left; vertical-align:top; font-size:13px; }
+    th { position:sticky; top:0; background:#fff; z-index:1; }
+    tr:hover td { background:#fafbff; }
+    .actions { display:flex; gap:6px; flex-wrap:wrap; }
+    .kpi { display:flex; gap:8px; flex-wrap:wrap; margin:10px 0 0; }
+    .kpi .pill b { font-size:13px; }
+    .sep { height:10px; }
+    .footer { margin-top:10px; font-size:12px; color:var(--muted); }
+    @media (max-width:900px){ .col-6,.col-4,.col-3,.col-2{grid-column:span 12} th{position:static} }
+  </style>
 </head>
-
 <body>
+  <header class="wrap">
+    <h1>Реестр объектов ЗС ГО</h1>
+    <div class="muted">Локальное хранение на устройстве. Импорт/экспорт через CSV/JSON. Нумерация — с 1.</div>
+  </header>
 
-<h1>Реестр объектов ЗС ГО</h1>
+  <main class="wrap">
+    <section class="card">
+      <div class="row">
+        <button class="btn primary small" id="btnAdd">Добавить / обновить</button>
+        <button class="btn small" id="btnClearForm">Очистить форму</button>
 
-<div class="card">
-<input id="name" placeholder="Название объекта">
-<input id="address" placeholder="Адрес">
-<input id="status" placeholder="Статус">
+        <span class="pill">Импорт:
+          <button class="btn small" id="btnImportCsv">CSV</button>
+          <button class="btn small" id="btnImportJson">JSON</button>
+        </span>
 
-<button onclick="add()">Добавить объект</button>
-</div>
+        <span class="pill">Экспорт:
+          <button class="btn small" id="btnExportCsv">CSV</button>
+          <button class="btn small" id="btnExportJson">JSON</button>
+        </span>
 
-<div class="card">
-<table id="table">
-<tr>
-<th>№</th>
-<th>Объект</th>
-<th>Адрес</th>
-<th>Статус</th>
-</tr>
-</table>
-</div>
+        <button class="btn danger small" id="btnWipe">Стереть данные (на устройстве)</button>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="grid">
+        <div class="col-3"><label>Номер ЗС ГО (zs_no)</label><input id="zs_no" placeholder="55-52" /></div>
+        <div class="col-3"><label>Инв. № (inv_no)</label><input id="inv_no" placeholder="480-23" /></div>
+        <div class="col-3"><label>Реестр МЧС № (mchs_no)</label><input id="mchs_no" placeholder="1562" /></div>
+        <div class="col-3"><label>Статус (status)</label>
+          <select id="status">
+            <option value="учтён">учтён</option>
+            <option value="не учтён">не учтён</option>
+            <option value="в работе">в работе</option>
+            <option value="снят">снят</option>
+          </select>
+        </div>
+
+        <div class="col-4"><label>КН ЗУ (kn_zu)</label><input id="kn_zu" placeholder="50:08:0050265:357" /></div>
+        <div class="col-4"><label>КН здания (kn_building)</label><input id="kn_building" placeholder="..." /></div>
+        <div class="col-4"><label>КН помещения (kn_room)</label><input id="kn_room" placeholder="..." /></div>
+
+        <div class="col-6"><label>Наименование (name)</label><input id="name" placeholder="Убежище / ПРУ / объект ГО и т.п." /></div>
+        <div class="col-6"><label>Адрес (address)</label><input id="address" placeholder="г., улица, дом" /></div>
+
+        <div class="col-4"><label>Этап 1 (stage1)</label><input id="stage1" placeholder="документы / решение / обследование..." /></div>
+        <div class="col-4"><label>Этап 2 (stage2)</label><input id="stage2" placeholder="согласования / МЧС / ЕГРН..." /></div>
+        <div class="col-4"><label>Дедлайн (deadline)</label><input id="deadline" placeholder="2026-03-15" /></div>
+
+        <div class="col-6"><label>Ответственный (responsible)</label><input id="responsible" placeholder="ФИО/роль" /></div>
+        <div class="col-6"><label>Примечание (note)</label><input id="note" placeholder="кратко" /></div>
+
+        <div class="col-12"><label>Расширенное описание (desc)</label><textarea id="desc" placeholder="можно вставлять выдержки/ссылки/комментарии"></textarea></div>
+      </div>
+
+      <div class="sep"></div>
+
+      <div class="row">
+        <span class="pill">Поиск: <input id="q" placeholder="номер ЗС / КН / адрес / инв. / МЧС" style="width:320px; max-width:70vw;" /></span>
+        <span class="pill">Фильтр статуса:
+          <select id="fStatus" style="width:160px;">
+            <option value="">все</option>
+            <option value="учтён">учтён</option>
+            <option value="не учтён">не учтён</option>
+            <option value="в работе">в работе</option>
+            <option value="снят">снят</option>
+          </select>
+        </span>
+        <button class="btn small" id="btnResetFilters">Сброс</button>
+      </div>
+
+      <div class="kpi" id="kpi"></div>
+
+      <div style="overflow:auto; border-radius:12px; border:1px solid var(--line); margin-top:10px; background:#fff;">
+        <table id="tbl">
+          <thead>
+            <tr>
+              <th style="min-width:40px;">№</th>
+              <th style="min-width:90px;">ЗС ГО №</th>
+              <th style="min-width:90px;">Инв. №</th>
+              <th style="min-width:90px;">МЧС №</th>
+              <th style="min-width:160px;">КН ЗУ</th>
+              <th style="min-width:160px;">КН здания</th>
+              <th style="min-width:160px;">КН помещения</th>
+              <th style="min-width:220px;">Наименование</th>
+              <th style="min-width:260px;">Адрес</th>
+              <th style="min-width:90px;">Статус</th>
+              <th style="min-width:140px;">Ответственный</th>
+              <th style="min-width:120px;">Дедлайн</th>
+              <th style="min-width:160px;">Действия</th>
+            </tr>
+          </thead>
+          <tbody></tbody>
+        </table>
+      </div>
+
+      <div class="footer">
+        Совет: для массовой загрузки из Excel используйте «Импорт (CSV)». Для переноса на другое устройство — «Экспорт (JSON)» → потом «Импорт (JSON)».
+      </div>
+    </section>
+  </main>
+
+  <input type="file" id="filePick" accept=".csv,.txt,.json" style="display:none" />
 
 <script>
+(() => {
+  const KEY = "zs_go_registry_v2";
+  const $ = (id) => document.getElementById(id);
 
-let data = JSON.parse(localStorage.getItem("zsgo") || "[]");
+  const fields = ["zs_no","inv_no","mchs_no","kn_zu","kn_building","kn_room","name","address","status","stage1","stage2","responsible","deadline","note","desc"];
+  let editingId = null;
 
-function render(){
+  function nowId(){
+    return "id_" + Math.random().toString(16).slice(2) + "_" + Date.now().toString(16);
+  }
 
-let table=document.getElementById("table");
+  function load(){
+    try{
+      const raw = localStorage.getItem(KEY);
+      if(!raw) return [];
+      const data = JSON.parse(raw);
+      return Array.isArray(data) ? data : [];
+    }catch(e){ return []; }
+  }
+  function save(list){
+    localStorage.setItem(KEY, JSON.stringify(list));
+  }
 
-table.innerHTML=`
-<tr>
-<th>№</th>
-<th>Объект</th>
-<th>Адрес</th>
-<th>Статус</th>
-</tr>
-`;
+  function norm(s){ return (s ?? "").toString().trim(); }
 
-data.forEach((o,i)=>{
+  function getForm(){
+    const o = { id: editingId || nowId(), updated_at: new Date().toISOString() };
+    fields.forEach(f => o[f] = norm($(f).value));
+    return o;
+  }
+  function setForm(o){
+    editingId = o?.id || null;
+    fields.forEach(f => $(f).value = o?.[f] ?? "");
+    $("btnAdd").textContent = editingId ? "Обновить" : "Добавить / обновить";
+  }
+  function clearForm(){
+    editingId = null;
+    fields.forEach(f => $(f).value = (f==="status" ? "учтён" : ""));
+    $("btnAdd").textContent = "Добавить / обновить";
+  }
 
-table.innerHTML+=`
-<tr>
-<td>${i+1}</td>
-<td>${o.name}</td>
-<td>${o.address}</td>
-<td>${o.status}</td>
-</tr>
-`;
+  function matches(o, q){
+    if(!q) return true;
+    const hay = [
+      o.zs_no,o.inv_no,o.mchs_no,o.kn_zu,o.kn_building,o.kn_room,
+      o.name,o.address,o.status,o.stage1,o.stage2,o.responsible,o.deadline,o.note,o.desc
+    ].join(" ").toLowerCase();
+    return hay.includes(q.toLowerCase());
+  }
 
-});
+  function render(){
+    const list = load();
+    const q = norm($("q").value);
+    const fs = norm($("fStatus").value);
 
-}
+    const filtered = list.filter(o => matches(o,q) && (!fs || o.status===fs));
 
-function add(){
+    // KPI
+    const counts = filtered.reduce((acc,o)=>{ acc[o.status]= (acc[o.status]||0)+1; return acc; }, {});
+    const total = filtered.length;
+    $("kpi").innerHTML = [
+      `<span class="pill"><b>Показано:</b> ${total}</span>`,
+      `<span class="pill"><b>учтён:</b> ${counts["учтён"]||0}</span>`,
+      `<span class="pill"><b>не учтён:</b> ${counts["не учтён"]||0}</span>`,
+      `<span class="pill"><b>в работе:</b> ${counts["в работе"]||0}</span>`,
+      `<span class="pill"><b>снят:</b> ${counts["снят"]||0}</span>`
+    ].join("");
 
-let name=document.getElementById("name").value;
-let address=document.getElementById("address").value;
-let status=document.getElementById("status").value;
+    const tb = $("tbl").querySelector("tbody");
+    tb.innerHTML = "";
+    filtered.forEach((o, idx) => {
+      const tr = document.createElement("tr");
+      const cells = [
+        idx+1, o.zs_no, o.inv_no, o.mchs_no, o.kn_zu, o.kn_building, o.kn_room,
+        o.name, o.address, o.status, o.responsible, o.deadline
+      ];
+      cells.forEach(v => {
+        const td = document.createElement("td");
+        td.textContent = v || "";
+        tr.appendChild(td);
+      });
 
-data.push({name,address,status});
+      const tdAct = document.createElement("td");
+      tdAct.className = "actions";
+      const bEdit = document.createElement("button");
+      bEdit.className = "btn small";
+      bEdit.textContent = "Править";
+      bEdit.onclick = () => { setForm(o); window.scrollTo({top:0, behavior:"smooth"}); };
 
-localStorage.setItem("zsgo",JSON.stringify(data));
+      const bDel = document.createElement("button");
+      bDel.className = "btn danger small";
+      bDel.textContent = "Удалить";
+      bDel.onclick = () => {
+        if(!confirm("Удалить запись?")) return;
+        const cur = load().filter(x => x.id !== o.id);
+        save(cur);
+        if(editingId === o.id) clearForm();
+        render();
+      };
 
-render();
+      tdAct.appendChild(bEdit);
+      tdAct.appendChild(bDel);
+      tr.appendChild(tdAct);
+      tb.appendChild(tr);
+    });
+  }
 
-}
+  function upsert(){
+    const o = getForm();
+    if(!o.zs_no && !o.inv_no && !o.mchs_no && !o.kn_zu && !o.name){
+      alert("Заполните хотя бы один идентификатор: номер ЗС ГО / инв. № / МЧС № / КН / наименование.");
+      return;
+    }
+    const list = load();
+    const i = list.findIndex(x => x.id === o.id);
+    if(i >= 0) list[i] = o; else list.push(o);
+    save(list);
+    clearForm();
+    render();
+  }
 
-render();
+  // CSV helpers
+  function detectDelim(text){
+    // Excel RU часто ';'
+    const firstLine = text.split(/\r?\n/)[0] || "";
+    const commas = (firstLine.match(/,/g)||[]).length;
+    const semis  = (firstLine.match(/;/g)||[]).length;
+    return semis > commas ? ";" : ",";
+  }
 
+  function parseCSV(text){
+    const delim = detectDelim(text);
+    const lines = text.replace(/\r/g,"").split("\n").filter(l => l.trim().length);
+    if(lines.length < 2) return [];
+    const hdr = lines[0].split(delim).map(h => h.trim().replace(/^"|"$/g,""));
+    const rows = [];
+    for(let i=1;i<lines.length;i++){
+      const parts = lines[i].split(delim).map(x => x.trim().replace(/^"|"$/g,""));
+      const o = { id: nowId(), updated_at: new Date().toISOString() };
+      hdr.forEach((h, idx) => {
+        const key = h;
+        o[key] = parts[idx] ?? "";
+      });
+      rows.push(o);
+    }
+    return { rows, hdr };
+  }
+
+  function mapToSchema(rawRows){
+    // поддержка русских/вариативных заголовков, если попадутся
+    const alias = {
+      "Номер ЗС ГО":"zs_no","ЗС ГО №":"zs_no","zs_go_no":"zs_no","zs_no":"zs_no",
+      "Инвентарный номер":"inv_no","Инв. №":"inv_no","inv_no":"inv_no",
+      "Реестр МЧС":"mchs_no","Реестр МЧС №":"mchs_no","mchs_no":"mchs_no",
+      "КН ЗУ":"kn_zu","КН земельного участка":"kn_zu","kn_zu":"kn_zu",
+      "КН здания":"kn_building","kn_building":"kn_building",
+      "КН помещения":"kn_room","kn_room":"kn_room",
+      "Наименование":"name","name":"name",
+      "Адрес":"address","address":"address",
+      "Статус":"status","status":"status",
+      "Этап 1":"stage1","stage1":"stage1",
+      "Этап 2":"stage2","stage2":"stage2",
+      "Ответственный":"responsible","responsible":"responsible",
+      "Дедлайн":"deadline","Срок":"deadline","deadline":"deadline",
+      "Примечание":"note","note":"note",
+      "Описание":"desc","desc":"desc"
+    };
+
+    return rawRows.map(r => {
+      const o = { id: nowId(), updated_at: new Date().toISOString() };
+      // переносим значения по совпадающим ключам и алиасам
+      Object.keys(r).forEach(k => {
+        const kk = alias[k] || k;
+        if(fields.includes(kk)) o[kk] = norm(r[k]);
+      });
+      // дефолты
+      if(!o.status) o.status = "учтён";
+      fields.forEach(f => { if(o[f] === undefined) o[f] = ""; });
+      return o;
+    });
+  }
+
+  function download(filename, content, mime){
+    const blob = new Blob([content], {type: mime});
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement("a");
+    a.href = url; a.download = filename;
+    document.body.appendChild(a); a.click();
+    a.remove();
+    setTimeout(()=>URL.revokeObjectURL(url), 800);
+  }
+
+  function exportCSV(){
+    const list = load();
+    const hdr = ["zs_no","inv_no","mchs_no","kn_zu","kn_building","kn_room","name","address","status","stage1","stage2","responsible","deadline","note","desc"];
+    const delim = ";"; // удобнее для Excel RU
+    const lines = [];
+    lines.push(hdr.join(delim));
+    list.forEach(o => {
+      const row = hdr.map(h => {
+        const v = (o[h] ?? "").toString().replace(/"/g,'""');
+        return `"${v}"`;
+      }).join(delim);
+      lines.push(row);
+    });
+    download("zs_go_registry.csv", lines.join("\n"), "text/csv;charset=utf-8");
+  }
+
+  function exportJSON(){
+    const list = load();
+    download("zs_go_registry.json", JSON.stringify(list, null, 2), "application/json;charset=utf-8");
+  }
+
+  function importCSVFile(file){
+    const fr = new FileReader();
+    fr.onload = () => {
+      const text = fr.result.toString();
+      const parsed = parseCSV(text);
+      if(!parsed.rows.length){ alert("CSV пустой или неверный формат."); return; }
+      const mapped = mapToSchema(parsed.rows);
+
+      const cur = load();
+      // простое объединение: добавляем как новые записи
+      save(cur.concat(mapped));
+      clearForm();
+      render();
+      alert(`Импортировано записей: ${mapped.length}`);
+    };
+    fr.readAsText(file, "utf-8");
+  }
+
+  function importJSONFile(file){
+    const fr = new FileReader();
+    fr.onload = () => {
+      try{
+        const data = JSON.parse(fr.result.toString());
+        if(!Array.isArray(data)) throw new Error("JSON не массив");
+        // нормализация
+        const normalized = data.map(x => {
+          const o = { id: x.id || nowId(), updated_at: new Date().toISOString() };
+          fields.forEach(f => o[f] = norm(x[f]));
+          if(!o.status) o.status = "учтён";
+          return o;
+        });
+        const cur = load();
+        save(cur.concat(normalized));
+        clearForm();
+        render();
+        alert(`Импортировано записей: ${normalized.length}`);
+      }catch(e){
+        alert("Не удалось импортировать JSON: " + e.message);
+      }
+    };
+    fr.readAsText(file, "utf-8");
+  }
+
+  // wiring
+  $("btnAdd").onclick = upsert;
+  $("btnClearForm").onclick = clearForm;
+  $("q").oninput = render;
+  $("fStatus").onchange = render;
+  $("btnResetFilters").onclick = () => { $("q").value=""; $("fStatus").value=""; render(); };
+
+  $("btnExportCsv").onclick = exportCSV;
+  $("btnExportJson").onclick = exportJSON;
+
+  $("btnImportCsv").onclick = () => {
+    const fp = $("filePick");
+    fp.value = "";
+    fp.accept = ".csv,.txt";
+    fp.onchange = () => { if(fp.files?.[0]) importCSVFile(fp.files[0]); };
+    fp.click();
+  };
+  $("btnImportJson").onclick = () => {
+    const fp = $("filePick");
+    fp.value = "";
+    fp.accept = ".json";
+    fp.onchange = () => { if(fp.files?.[0]) importJSONFile(fp.files[0]); };
+    fp.click();
+  };
+
+  $("btnWipe").onclick = () => {
+    if(!confirm("Стереть все данные на этом устройстве?")) return;
+    localStorage.removeItem(KEY);
+    clearForm();
+    render();
+  };
+
+  // init
+  clearForm();
+  render();
+})();
 </script>
-
 </body>
 </html>
